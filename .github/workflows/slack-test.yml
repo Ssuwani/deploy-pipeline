@@ -9,4 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Say hello
-        run: echo Hello ${{ github.event.client_payload.example-key }}
+        run: |
+          echo Hello 
+          echo ${{ github.event.client_payload.example-key }}
