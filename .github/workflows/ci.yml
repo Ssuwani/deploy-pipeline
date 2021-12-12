@@ -37,7 +37,7 @@ jobs:
   #   runs-on: ubuntu-latest
 
   wait-training:
-    needs: [train-job, gke-credential]
+    needs: [train-job]
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: ${{ secrets.GKE_PROJECT }}
