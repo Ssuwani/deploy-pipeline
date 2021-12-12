@@ -20,18 +20,24 @@ jobs:
 
     env:
       GCS_BUCKET: "gs://kimnjang"
-
+      VERSION: ${{ github.event.inputs.version }}
     steps:
       - uses: actions/checkout@v2
 
+      - name: Find Suffix string
+        run: |
+          echo "SUFFIX=${VERSION//./}" >> $GITHUB_ENV
+        env:
+          VERSION: ${{ env.VERSION }}
       - name: set hyper parameter
         run: |
           cd train/overlays/dev
-          kustomize edit set namesuffix -- -${{ github.event.inputs.version }}
+          kustomize edit set namesuffix -- -${{ env.SUFFIX }}
+          kustomize edit set image ghcr.io/${{ env.OWNER_LC }}/train-mnist:${{ env.VERSION }}
           echo $(jq '.[].value = ["--save_model_bucket_name", "${{env.GCS_BUCKET}}", "--optimizer", "${{ github.event.inputs.optimizer }}", "--hidden_units", "${{ github.event.inputs.hidden_units }}"]' train-job-patch.json) > train-job-patch.json
           git config --global user.name ${{ github.repository_owner }}
           git config --global user.email "jsuwan961205@gmail.com"
-          git commit -am 'Publish new train job ${{ github.event.inputs.version }}'
+          git commit -am 'Publish new train job ${{ env.SUFFIX }}'
           git push || echo 'no changes'
   # gke-credential:
   #   runs-on: ubuntu-latest
@@ -69,7 +75,7 @@ jobs:
           credentials: ${{ secrets.GKE_SA_KEY }}
 
       - name: Wait training job complete
-        run: kubectl wait --for=condition=complete --timeout 24h -n deploy-test job/mnist-train-job-${{ github.event.inputs.version }}
+        run: kubectl wait --for=condition=complete --timeout 24h -n deploy-test job/mnist-train-job-${{ env.SUFFIX }}
 
   bento-pack:
     needs: wait-training
@@ -108,5 +114,5 @@ jobs:
           kustomize edit set image ghcr.io/${{ env.OWNER_LC }}/mnist_classifier_bento:${{github.event.inputs.version}}
           git config --global user.name ${{ github.repository_owner }}
           git config --global user.email "jsuwan961205@gmail.com"
-          git commit -am 'Update serving model tag ${{ github.event.inputs.version }}'
+          git commit -am 'Update serving model tag ${{ env.SUFFIX }}'
           git push || echo 'no changes'
