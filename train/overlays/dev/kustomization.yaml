@@ -4,6 +4,8 @@ resources:
 - ../../base
 nameSuffix: "-0017"
 images:
+- name: ghcr.io//train-mnist
+  newTag: 0.0.17
 - name: ghcr.io/ssuwani/train-mnist
   newTag: 0.0.16
 
