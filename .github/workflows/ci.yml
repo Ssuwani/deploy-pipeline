@@ -33,7 +33,11 @@ jobs:
           git config --global user.email "jsuwan961205@gmail.com"
           git commit -am 'Publish new train job ${{ github.event.inputs.version }}'
           git push || echo 'no changes'
-  gke-credential:
+  # gke-credential:
+  #   runs-on: ubuntu-latest
+    
+  wait-training:
+    needs: [train-job, gke-credential]
     runs-on: ubuntu-latest
     env:
       PROJECT_ID: ${{ secrets.GKE_PROJECT }}
@@ -64,9 +68,6 @@ jobs:
           location: ${{ env.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SA_KEY }}
 
-  wait-training:
-    needs: [train-job, gke-credential]
-    runs-on: ubuntu-latest
 
     steps:
       - name: Wait training job complete
