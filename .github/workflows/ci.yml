@@ -46,8 +46,9 @@ jobs:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SA_KEY }}
+          
   wait-training:
-    needs: train-job
+    needs: [train-job, gke-credential]
     runs-on: ubuntu-latest
     env:
       GKE_CLUSTER: hackathon
