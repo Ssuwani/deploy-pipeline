@@ -1,1 +1,1 @@
-[ { "op": "replace", "path": "/spec/template/spec/containers/0/args", "value": [ "--save_model_bucket_name", "gs://kimnjang", "--optimizer", "adam", "--hidden_units", "217" ] } ]
+[ { "op": "replace", "path": "/spec/template/spec/containers/0/args", "value": [ "--save_model_bucket_name", "gs://kimnjang", "--optimizer", "adam", "--hidden_units", "256" ] } ]
