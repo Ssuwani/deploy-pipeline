@@ -35,7 +35,7 @@ jobs:
           git push || echo 'no changes'
   # gke-credential:
   #   runs-on: ubuntu-latest
-    
+
   wait-training:
     needs: [train-job, gke-credential]
     runs-on: ubuntu-latest
@@ -68,8 +68,6 @@ jobs:
           location: ${{ env.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SA_KEY }}
 
-
-    steps:
       - name: Wait training job complete
         run: kubectl wait --for=condition=complete --timeout 24h -n deploy-test job/mnist-train-job-${{ github.event.inputs.version }}
 
