@@ -1,0 +1,82 @@
+name: Packing BentoML
+
+on:
+  workflow_dispatch:
+    inputs:
+      hidden_units:
+        description: "hidden units"
+        required: true
+      optimizer:
+        description: "optimizer"
+        required: true
+      version:
+        description: "experiment version"
+        required: true
+      # Tag Must be Already Updated
+
+jobs:
+  train-job:
+    runs-on: ubuntu-latest
+
+    env:
+      GCS_BUCKET: "gs://kimnjang"
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: set hyper parameter
+        run: |
+          cd train/overlays/dev
+          kustomize edit set namesuffix -- -${{ github.event.inputs.version }}
+          echo $(jq '.[].value = ["--save_model_bucket_name", ${{env.GCS_BUCKET}}, "--optimizer", "${{ github.event.inputs.optimizer }}", "--hidden_units", "${{ github.event.inputs.hidden_units }}"]' training-job-patch.json) > training-job-patch.json
+          git config --global user.name ${{ github.repository_owner }}
+          git config --global user.email "jsuwan961205@gmail.com"
+          git commit -am 'Publish new train job ${{ github.event.inputs.version }}'
+          git push || echo 'no changes'
+
+  wait-training:
+    needs: train-job
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait training job complete
+        run: kubectl wait --for=condition=complete --timeout 24h -n mnist job/mnist-train-job-${{ github.event.inputs.version }}
+
+  bento-pack:
+    needs: wait-training
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: instll dependency
+        run: pip install tensorflow imageio bentoml pillow
+
+      - name: Packing BentoML
+        run: |
+          echo ${{ github.event.inputs.model_path }}
+          python bento/bento_packer.py --model_path "${{env.GCS_BUCKET}}/mnist/units_${{github.event.inputs.hidden_units}}_optimizer_${{github.event.inputs.optimizer}}.h5"
+          echo "BENTO_SAVED_PATH=$(bentoml get MnistService:latest --print-location --quiet)" >> $GITHUB_ENV
+          echo ${{ env.BENTO_SAVED_PATH }}
+
+      - name: set lower case owner name
+        run: |
+          echo "OWNER_LC=${OWNER,,}" >>${GITHUB_ENV}
+        env:
+          OWNER: "${{ github.repository_owner }}"
+
+      - name: BentoML Build and push
+        uses: docker/build-push-action@v2
+        with:
+          context: ${{env.BENTO_SAVED_PATH}}
+          file: ${{env.BENTO_SAVED_PATH}}/dockerfile
+          push: true
+          tags: ghcr.io/${{ env.OWNER_LC}}/mnist_classifier_bento:${{github.event.inputs.version}}
+
+      - name: set serving model tag
+        run: |
+          cd serve/overlays/dev
+          kustomize edit set image ghcr.io/${{ env.OWNER_LC }}/mnist_classifier_bento:${{github.event.inputs.version}}
+          git config --global user.name ${{ github.repository_owner }}
+          git config --global user.email "jsuwan961205@gmail.com"
+          git commit -am 'Update serving model tag ${{ github.event.inputs.version }}'
+          git push || echo 'no changes'
