@@ -28,7 +28,7 @@ jobs:
         run: |
           cd train/overlays/dev
           kustomize edit set namesuffix -- -${{ github.event.inputs.version }}
-          echo $(jq '.[].value = ["--save_model_bucket_name", "${{env.GCS_BUCKET}}", "--optimizer", "${{ github.event.inputs.optimizer }}", "--hidden_units", "${{ github.event.inputs.hidden_units }}"]' training-job-patch.json) > training-job-patch.json
+          echo $(jq '.[].value = ["--save_model_bucket_name", "${{env.GCS_BUCKET}}", "--optimizer", "${{ github.event.inputs.optimizer }}", "--hidden_units", "${{ github.event.inputs.hidden_units }}"]' train-job-patch.json) > train-job-patch.json
           git config --global user.name ${{ github.repository_owner }}
           git config --global user.email "jsuwan961205@gmail.com"
           git commit -am 'Publish new train job ${{ github.event.inputs.version }}'
