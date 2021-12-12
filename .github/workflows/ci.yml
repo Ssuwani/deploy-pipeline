@@ -35,6 +35,9 @@ jobs:
           git push || echo 'no changes'
   gke-credential:
     runs-on: ubuntu-latest
+    env:
+      GKE_CLUSTER: hackathon
+      GKE_ZONE: us-central1-c
     steps:
       - uses: google-github-actions/setup-gcloud@v0.2.0
         with:
@@ -46,13 +49,11 @@ jobs:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SA_KEY }}
-          
+
   wait-training:
     needs: [train-job, gke-credential]
     runs-on: ubuntu-latest
-    env:
-      GKE_CLUSTER: hackathon
-      GKE_ZONE: us-central1-c
+
     steps:
       - name: Wait training job complete
         run: kubectl wait --for=condition=complete --timeout 24h -n deploy-test job/mnist-train-job-${{ github.event.inputs.version }}
