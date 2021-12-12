@@ -61,11 +61,11 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      
+
       - name: Find Suffix string
         run: |
           echo "SUFFIX=${VERSION//./}" >> $GITHUB_ENV
-      
+
       # Setup gcloud CLI
       - uses: google-github-actions/setup-gcloud@94337306dda8180d967a56932ceb4ddcf01edae7
         with:
@@ -83,7 +83,15 @@ jobs:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_ZONE }}
           credentials: ${{ secrets.GKE_SA_KEY }}
+      - uses: int128/kustomize-action@v1
+        id: kustomize
+        with:
+          kustomization: train/overlays/dev/kustomization.yaml
 
+      - name: Sleep for 5 seconds
+        run: sleep 5s
+
+        shell: bash
       - name: Wait training job complete
         run: kubectl wait --for=condition=complete --timeout 24h -n deploy-test job/mnist-train-job-${{ env.SUFFIX }}
 
